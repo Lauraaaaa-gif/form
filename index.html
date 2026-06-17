@@ -465,12 +465,61 @@
       padding: 24px;
     }
 
+    .receipt-card {
+      width: min(460px, 100%);
+    }
+
     .modal-card form {
       padding: 16px 0 0;
     }
 
     .modal-card .actions {
       justify-content: flex-end;
+    }
+
+    .receipt-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      margin: 10px 0 14px;
+      border-radius: 999px;
+      padding: 5px 12px;
+      background: rgba(243, 207, 122, 0.14);
+      border: 1px solid rgba(243, 207, 122, 0.34);
+      color: var(--accent-dark);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .receipt-list {
+      margin: 14px 0 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(8, 12, 18, 0.82);
+    }
+
+    .receipt-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 10px;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      line-height: 1.5;
+    }
+
+    .receipt-row:last-child {
+      border-bottom: 0;
+    }
+
+    .receipt-row span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .receipt-row strong {
+      color: var(--ink);
+      word-break: break-word;
     }
 
     iframe {
@@ -683,6 +732,19 @@
     </div>
   </div>
 
+  <div class="modal" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+    <div class="modal-card receipt-card">
+      <h2 id="receiptTitle">已填寫完成</h2>
+      <div class="receipt-badge">請截圖保存此收據</div>
+      <p class="hint">已收到你的訂單，請保留此畫面並上傳到我們的聊天室。</p>
+      <p class="hint">一般情況下送出時間為通過好友的隔日(須滿24小時)，以聊天室通知時間為準。</p>
+      <div class="receipt-list" id="receiptContent"></div>
+      <div class="actions">
+        <button class="primary" type="button" id="closeReceiptBtn">我已截圖</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const adminUsername = "baixii";
     const adminPassword = "123456789";
@@ -704,6 +766,8 @@
     const loginStatus = document.getElementById("loginStatus");
     const adminStatus = document.getElementById("adminStatus");
     const downloadArea = document.getElementById("downloadArea");
+    const receiptModal = document.getElementById("receiptModal");
+    const receiptContent = document.getElementById("receiptContent");
 
     let entries = readEntries();
     let isAdmin = sessionStorage.getItem(adminSessionKey) === "yes";
@@ -795,6 +859,36 @@
       loginModal.classList.remove("is-open");
       loginForm.reset();
       setLoginStatus("");
+    }
+
+    function makeOrderNo() {
+      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const randomPart = Math.random().toString(36).slice(2, 7).toUpperCase();
+      return `FORM-${datePart}-${randomPart}`;
+    }
+
+    function showReceipt(item) {
+      const rows = [
+        ["收據編號", item.orderNo],
+        ["送出時間", item.createdAt],
+        ["FB名稱", item.fbName],
+        ["遊戲名稱", item.gameName],
+        ["UID", item.uid],
+        ["商品名稱", item.productName],
+        ["數量", item.quantity]
+      ];
+
+      receiptContent.innerHTML = rows.map(([label, value]) => `
+        <div class="receipt-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join("");
+      receiptModal.classList.add("is-open");
+    }
+
+    function closeReceipt() {
+      receiptModal.classList.remove("is-open");
     }
 
     function render() {
@@ -938,6 +1032,7 @@
       event.preventDefault();
       const data = new FormData(form);
       const item = {
+        orderNo: makeOrderNo(),
         createdAt: new Date().toLocaleString("zh-TW", { hour12: false }),
         fbName: sanitize(data.get("fbName")),
         gameName: sanitize(data.get("gameName")),
@@ -955,12 +1050,13 @@
         setAdminStatus("已新增一筆本機資料。");
       } else {
         submitToGoogleSheet(item);
-        setStatus("感謝您的填寫，稍後會在聊天室與您再次核對。");
+        setStatus("");
         setAdminStatus("已新增一筆本機資料，並送往 Google 試算表。");
       }
 
       form.reset();
       form.quantity.value = 1;
+      showReceipt(item);
     });
 
     loginBtn.addEventListener("click", openLogin);
@@ -968,6 +1064,10 @@
     loginModal.addEventListener("click", event => {
       if (event.target === loginModal) closeLogin();
     });
+    receiptModal.addEventListener("click", event => {
+      if (event.target === receiptModal) closeReceipt();
+    });
+    document.getElementById("closeReceiptBtn").addEventListener("click", closeReceipt);
 
     loginForm.addEventListener("submit", event => {
       event.preventDefault();
