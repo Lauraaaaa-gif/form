@@ -297,6 +297,26 @@
       border-color: rgba(248, 113, 113, 0.4);
     }
 
+    .delete-row-btn {
+      display: inline-flex;
+      width: 34px;
+      min-height: 34px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(248, 113, 113, 0.42);
+      border-radius: 6px;
+      padding: 0;
+      background: rgba(127, 29, 29, 0.36);
+      color: var(--danger);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .delete-row-btn:hover {
+      background: rgba(127, 29, 29, 0.56);
+      border-color: rgba(248, 113, 113, 0.7);
+    }
+
     .status {
       min-height: 24px;
       margin-top: 13px;
@@ -668,15 +688,8 @@
         </div>
 
       <div class="admin-body">
-        <div class="setup">
-          <label>Apps Script Web App URL
-            <input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
-          </label>
-          <button class="secondary" type="button" id="saveUrlBtn">儲存連結</button>
-        </div>
         <div class="status" id="adminStatus" role="status" aria-live="polite"></div>
         <div class="actions" id="downloadArea" style="display:none;"></div>
-        <p class="mini">未填 URL 時，資料只會存在這台裝置；填入 URL 後，資料會同步寫入 Google 試算表。</p>
 
         <div class="summary" style="margin-top:16px;">
           <div class="metric">
@@ -755,7 +768,6 @@
 
     const form = document.getElementById("entryForm");
     const statusEl = document.getElementById("status");
-    const scriptUrlEl = document.getElementById("scriptUrl");
     const tableArea = document.getElementById("tableArea");
     const summaryArea = document.getElementById("summaryArea");
     const adminPanel = document.getElementById("adminPanel");
@@ -828,7 +840,6 @@
 
     function applyScriptUrl() {
       const url = getConfiguredScriptUrl();
-      scriptUrlEl.value = url;
       if (url) {
         form.action = url;
       } else {
@@ -917,10 +928,11 @@
                 <th>UID</th>
                 <th>商品名稱</th>
                 <th>數量</th>
+                <th>刪除</th>
               </tr>
             </thead>
             <tbody>
-              ${entries.slice().reverse().map(item => `
+              ${entries.map((item, index) => ({ item, index })).reverse().map(({ item, index }) => `
                 <tr>
                   <td>${escapeHtml(item.createdAt)}</td>
                   <td>${escapeHtml(item.fbName)}</td>
@@ -928,6 +940,9 @@
                   <td>${escapeHtml(item.uid)}</td>
                   <td>${escapeHtml(item.productName)}</td>
                   <td>${escapeHtml(item.quantity)}</td>
+                  <td>
+                    <button class="delete-row-btn" type="button" data-delete-index="${index}" title="刪除此筆" aria-label="刪除此筆">🗑</button>
+                  </td>
                 </tr>
               `).join("")}
             </tbody>
@@ -1028,6 +1043,19 @@
       window.setTimeout(() => syncForm.remove(), 1000);
     }
 
+    function deleteLocalEntry(index) {
+      const item = entries[index];
+      if (!item) return;
+
+      const label = item.fbName || item.gameName || item.uid || "這筆紀錄";
+      if (!confirm(`確定要刪除「${label}」這筆本機紀錄嗎？Google 試算表資料不會被刪除。`)) return;
+
+      entries.splice(index, 1);
+      saveEntries();
+      render();
+      setAdminStatus("已刪除一筆本機紀錄。");
+    }
+
     form.addEventListener("submit", event => {
       event.preventDefault();
       const data = new FormData(form);
@@ -1087,14 +1115,13 @@
       setStatus("");
     });
 
-    document.getElementById("saveUrlBtn").addEventListener("click", () => {
-      const url = sanitize(scriptUrlEl.value);
-      localStorage.setItem(scriptUrlKey, url);
-      applyScriptUrl();
-      setAdminStatus(url ? "已儲存線上試算表連結。" : "已清除線上連結。");
-    });
-
     document.getElementById("exportBtn").addEventListener("click", exportCsv);
+
+    tableArea.addEventListener("click", event => {
+      const button = event.target.closest("[data-delete-index]");
+      if (!button) return;
+      deleteLocalEntry(Number(button.dataset.deleteIndex));
+    });
 
     document.getElementById("clearFormBtn").addEventListener("click", () => {
       form.reset();
