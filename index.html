@@ -206,6 +206,16 @@
       gap: 12px;
     }
 
+    .product-fields {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    .product-fields label {
+      margin-bottom: 0;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -661,13 +671,11 @@
             <input name="uid" inputmode="numeric" required>
           </label>
           <div class="form-row">
-            <label>商品名稱
-              <input name="productName" required>
-            </label>
             <label>數量
-              <input name="quantity" type="number" inputmode="numeric" min="1" step="1" value="1" required>
+              <input name="quantity" type="number" inputmode="numeric" min="1" max="4" step="1" value="1" required>
             </label>
           </div>
+          <div class="product-fields" id="productFields"></div>
           <input type="hidden" name="source" value="商品報名表">
           <button class="primary" type="submit">送出報名</button>
           <div class="status" id="status" role="status" aria-live="polite"></div>
@@ -768,6 +776,7 @@
 
     const form = document.getElementById("entryForm");
     const statusEl = document.getElementById("status");
+    const productFields = document.getElementById("productFields");
     const tableArea = document.getElementById("tableArea");
     const summaryArea = document.getElementById("summaryArea");
     const adminPanel = document.getElementById("adminPanel");
@@ -900,6 +909,31 @@
 
     function closeReceipt() {
       receiptModal.classList.remove("is-open");
+    }
+
+    function getQuantityValue() {
+      const quantityInput = form.elements.quantity;
+      const value = Number(quantityInput.value || 1);
+      const safeValue = Math.min(4, Math.max(1, value));
+      quantityInput.value = safeValue;
+      return safeValue;
+    }
+
+    function getProductValues() {
+      return Array.from(productFields.querySelectorAll("[data-product-input]"))
+        .map(input => sanitize(input.value))
+        .filter(Boolean);
+    }
+
+    function renderProductFields() {
+      const quantity = getQuantityValue();
+      const oldValues = getProductValues();
+
+      productFields.innerHTML = Array.from({ length: quantity }, (_, index) => `
+        <label>商品名稱${quantity > 1 ? index + 1 : ""}
+          <input name="productName${index + 1}" data-product-input required value="${escapeHtml(oldValues[index] || "")}">
+        </label>
+      `).join("");
     }
 
     function render() {
@@ -1059,14 +1093,22 @@
     form.addEventListener("submit", event => {
       event.preventDefault();
       const data = new FormData(form);
+      const quantity = getQuantityValue();
+      const productNames = getProductValues();
+
+      if (productNames.length !== quantity) {
+        setStatus("請完整填寫每一個商品名稱。", true);
+        return;
+      }
+
       const item = {
         orderNo: makeOrderNo(),
         createdAt: new Date().toLocaleString("zh-TW", { hour12: false }),
         fbName: sanitize(data.get("fbName")),
         gameName: sanitize(data.get("gameName")),
         uid: sanitize(data.get("uid")),
-        productName: sanitize(data.get("productName")),
-        quantity: Math.max(1, Number(data.get("quantity") || 1))
+        productName: productNames.join("、"),
+        quantity
       };
 
       entries.push(item);
@@ -1084,6 +1126,7 @@
 
       form.reset();
       form.quantity.value = 1;
+      renderProductFields();
       showReceipt(item);
     });
 
@@ -1126,6 +1169,7 @@
     document.getElementById("clearFormBtn").addEventListener("click", () => {
       form.reset();
       form.quantity.value = 1;
+      renderProductFields();
       setAdminStatus("表單已清空。");
     });
 
@@ -1138,6 +1182,9 @@
     });
 
     applyScriptUrl();
+    form.elements.quantity.addEventListener("input", renderProductFields);
+    form.elements.quantity.addEventListener("change", renderProductFields);
+    renderProductFields();
     render();
     setAdminVisible(isAdmin);
   </script>
