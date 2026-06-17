@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>fb.Bai Xi</title>
+  <title>商品報名表</title>
   <style>
     :root {
       color-scheme: light;
@@ -479,9 +479,9 @@
   <div class="wrap">
     <main class="hero">
       <section class="hero-copy" aria-label="活動資訊">
-        <div class="eyebrow">Bai Xi線上登記</div>
-        <h1>第五人格代送</h1>
-        <p class="lead">請已付款的老闆幫我填寫以下資訊排單，稍後我會在聊天室與您核對(。•ω•。)ノ♡</p>
+        <div class="eyebrow">線上登記</div>
+        <h1>商品報名表</h1>
+        <p class="lead">請填寫正確的 FB 名稱、遊戲名稱與 UID。送出後系統會記錄報名資料，管理者可登入後查看統計與匯出 Excel CSV。</p>
       </section>
 
       <section class="form-panel" aria-label="報名表">
@@ -592,8 +592,8 @@
   </div>
 
   <script>
-    const adminUsername = "laura";
-    const adminPassword = "lauraaa";
+    const adminUsername = "admin";
+    const adminPassword = "123456";
     const storageKey = "product_registration_entries_v1";
     const scriptUrlKey = "product_registration_script_url_v1";
     const adminSessionKey = "product_registration_admin_session_v1";
@@ -813,7 +813,37 @@
       setAdminStatus("CSV 已產生。若沒有自動下載，請點下方連結。");
     }
 
+    function submitToGoogleSheet(item) {
+      const syncForm = document.createElement("form");
+      syncForm.method = "post";
+      syncForm.action = form.action;
+      syncForm.target = "submitFrame";
+      syncForm.style.display = "none";
+
+      const payload = {
+        fbName: item.fbName,
+        gameName: item.gameName,
+        uid: item.uid,
+        productName: item.productName,
+        quantity: item.quantity,
+        source: "商品報名表"
+      };
+
+      Object.entries(payload).forEach(([name, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        syncForm.appendChild(input);
+      });
+
+      document.body.appendChild(syncForm);
+      syncForm.submit();
+      window.setTimeout(() => syncForm.remove(), 1000);
+    }
+
     form.addEventListener("submit", event => {
+      event.preventDefault();
       const data = new FormData(form);
       const item = {
         createdAt: new Date().toLocaleString("zh-TW", { hour12: false }),
@@ -829,10 +859,10 @@
       render();
 
       if (!form.action) {
-        event.preventDefault();
         setStatus("已送出。管理者尚未設定線上試算表，目前先儲存在本機。");
         setAdminStatus("已新增一筆本機資料。");
       } else {
+        submitToGoogleSheet(item);
         setStatus("已送出報名，謝謝。");
         setAdminStatus("已新增一筆本機資料，並送往 Google 試算表。");
       }
