@@ -216,6 +216,44 @@
       margin-bottom: 0;
     }
 
+    .quantity-label {
+      display: block;
+    }
+
+    .quantity-stepper {
+      display: grid;
+      grid-template-columns: 42px minmax(68px, 1fr) 42px;
+      gap: 8px;
+      margin-top: 7px;
+      align-items: center;
+    }
+
+    .quantity-stepper input {
+      margin-top: 0;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .stepper-btn {
+      min-height: 44px;
+      border: 1px solid rgba(243, 207, 122, 0.38);
+      background: rgba(243, 207, 122, 0.12);
+      color: var(--accent-dark);
+      font-size: 22px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .stepper-btn:hover {
+      background: rgba(243, 207, 122, 0.2);
+    }
+
+    .stepper-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -672,8 +710,12 @@
             <input name="uid" inputmode="numeric" required>
           </label>
           <div class="form-row">
-            <label>數量
-              <input name="quantity" type="number" inputmode="numeric" min="1" max="4" step="1" value="1" required>
+            <label class="quantity-label">數量
+              <div class="quantity-stepper">
+                <button class="stepper-btn" type="button" id="quantityMinus" aria-label="減少數量">−</button>
+                <input name="quantity" id="quantityInput" type="number" inputmode="numeric" min="1" max="4" step="1" value="1" required>
+                <button class="stepper-btn" type="button" id="quantityPlus" aria-label="增加數量">+</button>
+              </div>
             </label>
           </div>
           <div class="product-fields" id="productFields"></div>
@@ -762,7 +804,7 @@
       <p class="hint">一般情況下送出時間為通過好友的隔日(須滿24小時)，以聊天室通知時間為準。</p>
       <div class="receipt-list" id="receiptContent"></div>
       <div class="actions">
-        <button class="secondary" type="button" id="downloadReceiptBtn">下載收據圖片</button>
+        <button class="secondary" type="button" id="downloadReceiptBtn">分享收據圖片</button>
         <button class="primary" type="button" id="closeReceiptBtn">我已截圖</button>
       </div>
     </div>
@@ -791,6 +833,8 @@
     const downloadArea = document.getElementById("downloadArea");
     const receiptModal = document.getElementById("receiptModal");
     const receiptContent = document.getElementById("receiptContent");
+    const quantityMinus = document.getElementById("quantityMinus");
+    const quantityPlus = document.getElementById("quantityPlus");
 
     let entries = readEntries();
     let isAdmin = sessionStorage.getItem(adminSessionKey) === "yes";
@@ -938,6 +982,34 @@
       return currentY + lineHeight;
     }
 
+    function saveCanvasAsPng(canvas, fileName) {
+      canvas.toBlob(async blob => {
+        if (!blob) return;
+
+        const file = new File([blob], fileName, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: "報名收據",
+              text: "請保存此收據圖片"
+            });
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+          }
+        }
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        link.remove();
+      }, "image/png");
+    }
+
     function downloadReceiptImage() {
       if (!currentReceiptItem) return;
 
@@ -1019,12 +1091,7 @@
         y = Math.max(y + lineHeight, nextY) + rowGap;
       });
 
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = `收據-${currentReceiptItem.orderNo}.png`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      saveCanvasAsPng(canvas, `收據-${currentReceiptItem.orderNo}.png`);
     }
 
     function getQuantityValue() {
@@ -1032,7 +1099,15 @@
       const value = Number(quantityInput.value || 1);
       const safeValue = Math.min(4, Math.max(1, value));
       quantityInput.value = safeValue;
+      quantityMinus.disabled = safeValue <= 1;
+      quantityPlus.disabled = safeValue >= 4;
       return safeValue;
+    }
+
+    function changeQuantity(delta) {
+      const quantityInput = form.elements.quantity;
+      quantityInput.value = Number(quantityInput.value || 1) + delta;
+      renderProductFields();
     }
 
     function getProductValues() {
@@ -1299,6 +1374,8 @@
     });
 
     applyScriptUrl();
+    quantityMinus.addEventListener("click", () => changeQuantity(-1));
+    quantityPlus.addEventListener("click", () => changeQuantity(1));
     form.elements.quantity.addEventListener("input", renderProductFields);
     form.elements.quantity.addEventListener("change", renderProductFields);
     renderProductFields();
