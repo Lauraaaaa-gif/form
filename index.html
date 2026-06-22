@@ -216,6 +216,59 @@
       margin-bottom: 0;
     }
 
+    .query-box {
+      border-top: 1px solid var(--line);
+      padding: 18px 22px 22px;
+    }
+
+    .query-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 12px;
+    }
+
+    .query-actions label {
+      margin-bottom: 0;
+    }
+
+    .query-result {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(8, 12, 18, 0.82);
+    }
+
+    .query-result.is-open {
+      display: block;
+    }
+
+    .query-result-row {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      line-height: 1.5;
+    }
+
+    .query-result-row:last-child {
+      border-bottom: 0;
+    }
+
+    .query-result-row span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .query-result-row strong {
+      color: var(--ink);
+      word-break: break-word;
+    }
+
     .quantity-label {
       display: block;
     }
@@ -559,6 +612,29 @@
       font-size: 14px;
     }
 
+    .pending-badge,
+    .status-pill {
+      display: inline-flex;
+      min-height: 28px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: rgba(243, 207, 122, 0.14);
+      border: 1px solid rgba(243, 207, 122, 0.34);
+      color: var(--accent-dark);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .pending-badge {
+      margin: 0 0 12px;
+    }
+
+    .status-pill {
+      font-size: 13px;
+    }
+
     .receipt-list {
       margin: 14px 0 0;
       border: 1px solid var(--line);
@@ -661,6 +737,15 @@
         margin-top: 10px;
       }
 
+      .query-actions {
+        display: block;
+      }
+
+      .query-actions button {
+        width: 100%;
+        margin-top: 10px;
+      }
+
       .admin-head {
         display: block;
       }
@@ -724,6 +809,17 @@
           <div class="status" id="status" role="status" aria-live="polite"></div>
         </form>
         <iframe name="submitFrame" title="送出結果"></iframe>
+        <div class="query-box">
+          <h2>查詢訂單狀態</h2>
+          <p class="hint">輸入 UID 即可查詢最新一筆訂單的目前狀態、排單日期與管理備註。</p>
+          <div class="query-actions">
+            <label>UID
+              <input id="orderQueryInput" placeholder="請輸入 UID">
+            </label>
+            <button class="secondary" type="button" id="orderQueryBtn">查詢</button>
+          </div>
+          <div class="query-result" id="orderQueryResult"></div>
+        </div>
       </section>
     </main>
 
@@ -800,7 +896,8 @@
     <div class="modal-card receipt-card">
       <h2 id="receiptTitle">已填寫完成</h2>
       <div class="receipt-badge">請截圖保存此收據</div>
-      <p class="hint">已收到你的訂單，請保留此畫面並上傳到我們的聊天室。</p>
+      <div class="pending-badge">目前狀態：待確認</div>
+      <p class="hint">已收到您的訂單，請保留此畫面並上傳到我們的聊天室，經管理員核對後才會正式登記。</p>
       <p class="hint">一般情況下送出時間為通過好友的隔日(須滿24小時)，以聊天室通知時間為準。</p>
       <div class="receipt-list" id="receiptContent"></div>
       <div class="actions">
@@ -835,6 +932,9 @@
     const receiptContent = document.getElementById("receiptContent");
     const quantityMinus = document.getElementById("quantityMinus");
     const quantityPlus = document.getElementById("quantityPlus");
+    const orderQueryInput = document.getElementById("orderQueryInput");
+    const orderQueryBtn = document.getElementById("orderQueryBtn");
+    const orderQueryResult = document.getElementById("orderQueryResult");
 
     let entries = readEntries();
     let isAdmin = sessionStorage.getItem(adminSessionKey) === "yes";
@@ -938,6 +1038,7 @@
       currentReceiptItem = item;
       const rows = [
         ["收據編號", item.orderNo],
+        ["目前狀態", item.status || "待確認"],
         ["送出時間", item.createdAt],
         ["FB名稱", item.fbName],
         ["遊戲名稱", item.gameName],
@@ -957,6 +1058,66 @@
 
     function closeReceipt() {
       receiptModal.classList.remove("is-open");
+    }
+
+    function renderOrderQueryResult(rows, isError = false) {
+      orderQueryResult.classList.add("is-open");
+      orderQueryResult.innerHTML = rows.map(([label, value]) => `
+        <div class="query-result-row">
+          <span>${escapeHtml(label)}</span>
+          <strong style="${isError ? "color: var(--danger);" : ""}">${escapeHtml(value)}</strong>
+        </div>
+      `).join("");
+    }
+
+    function queryOrderStatus() {
+      const uid = sanitize(orderQueryInput.value);
+      if (!uid) {
+        renderOrderQueryResult([["查詢結果", "請先輸入 UID。"]], true);
+        return;
+      }
+
+      const callbackName = `orderStatusCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const script = document.createElement("script");
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        renderOrderQueryResult([["查詢結果", "查詢逾時，請稍後再試。"]], true);
+      }, 12000);
+
+      function cleanup() {
+        window.clearTimeout(timeout);
+        delete window[callbackName];
+        script.remove();
+      }
+
+      window[callbackName] = result => {
+        cleanup();
+        if (!result || !result.ok) {
+          renderOrderQueryResult([["查詢結果", result && result.message ? result.message : "查無此 UID 的訂單。"]], true);
+          return;
+        }
+
+        renderOrderQueryResult([
+          ["UID", result.uid || uid],
+          ["收據編號", result.orderNo || ""],
+          ["目前狀態", result.status || "待確認"],
+          ["排單日期", result.scheduledDate || "尚未填寫"],
+          ["管理備註", result.adminNote || "無"],
+          ["商品名稱", result.productName || ""],
+          ["數量", result.quantity || ""]
+        ]);
+      };
+
+      const url = new URL(getConfiguredScriptUrl());
+      url.searchParams.set("uid", uid);
+      url.searchParams.set("callback", callbackName);
+      script.src = url.toString();
+      script.onerror = () => {
+        cleanup();
+        renderOrderQueryResult([["查詢結果", "查詢失敗，請確認網路後再試。"]], true);
+      };
+      document.body.appendChild(script);
+      renderOrderQueryResult([["查詢結果", "查詢中..."]]);
     }
 
     function wrapCanvasText(context, text, x, y, maxWidth, lineHeight) {
@@ -1015,6 +1176,7 @@
 
       const rows = [
         ["收據編號", currentReceiptItem.orderNo],
+        ["目前狀態", currentReceiptItem.status || "待確認"],
         ["送出時間", currentReceiptItem.createdAt],
         ["FB名稱", currentReceiptItem.fbName],
         ["遊戲名稱", currentReceiptItem.gameName],
@@ -1132,6 +1294,7 @@
       const products = new Map();
 
       entries.forEach(item => {
+        if (!item.status) item.status = "待確認";
         const key = item.productName || "未填商品";
         products.set(key, (products.get(key) || 0) + Number(item.quantity || 0));
       });
@@ -1153,6 +1316,7 @@
                 <th>UID</th>
                 <th>商品名稱</th>
                 <th>數量</th>
+                <th>狀態</th>
                 <th>刪除</th>
               </tr>
             </thead>
@@ -1165,6 +1329,7 @@
                   <td>${escapeHtml(item.uid)}</td>
                   <td>${escapeHtml(item.productName)}</td>
                   <td>${escapeHtml(item.quantity)}</td>
+                  <td><span class="status-pill">${escapeHtml(item.status || "待確認")}</span></td>
                   <td>
                     <button class="delete-row-btn" type="button" data-delete-index="${index}" title="刪除此筆" aria-label="刪除此筆">🗑</button>
                   </td>
@@ -1217,8 +1382,8 @@
       }
 
       const rows = [
-        ["時間", "FB名稱", "遊戲名稱", "UID", "商品名稱", "數量"],
-        ...entries.map(item => [item.createdAt, item.fbName, item.gameName, item.uid, item.productName, item.quantity])
+        ["收據編號", "時間", "FB名稱", "遊戲名稱", "UID", "商品名稱", "數量", "狀態"],
+        ...entries.map(item => [item.orderNo || "", item.createdAt, item.fbName, item.gameName, item.uid, item.productName, item.quantity, item.status || "待確認"])
       ];
       const blob = new Blob(["\ufeff" + toCsv(rows)], { type: "text/csv;charset=utf-8" });
       if (currentDownloadUrl) {
@@ -1247,11 +1412,15 @@
       syncForm.style.display = "none";
 
       const payload = {
+        orderNo: item.orderNo,
         fbName: item.fbName,
         gameName: item.gameName,
         uid: item.uid,
         productName: item.productName,
         quantity: item.quantity,
+        status: item.status || "待確認",
+        confirmedAt: "",
+        adminNote: "",
         source: "第五排單"
       };
 
@@ -1294,6 +1463,7 @@
 
       const item = {
         orderNo: makeOrderNo(),
+        status: "待確認",
         createdAt: new Date().toLocaleString("zh-TW", { hour12: false }),
         fbName: sanitize(data.get("fbName")),
         gameName: sanitize(data.get("gameName")),
@@ -1376,6 +1546,10 @@
     applyScriptUrl();
     quantityMinus.addEventListener("click", () => changeQuantity(-1));
     quantityPlus.addEventListener("click", () => changeQuantity(1));
+    orderQueryBtn.addEventListener("click", queryOrderStatus);
+    orderQueryInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") queryOrderStatus();
+    });
     form.elements.quantity.addEventListener("input", renderProductFields);
     form.elements.quantity.addEventListener("change", renderProductFields);
     renderProductFields();
