@@ -10,7 +10,6 @@ const HEADERS = [
   "數量",
   "狀態",
   "排單日期",
-  "確認時間",
   "管理備註",
   "來源"
 ];
@@ -41,7 +40,6 @@ function doPost(e) {
     Number(data.quantity || 0),
     data.status || "待確認",
     data.scheduledDate || "",
-    data.confirmedAt || "",
     data.adminNote || "",
     data.source || "第五排單"
   ]);
@@ -74,7 +72,6 @@ function findOrderByUid_(uid) {
         quantity: getCell_(headers, row, "數量"),
         status: getCell_(headers, row, "狀態") || "待確認",
         scheduledDate: formatDate_(getCell_(headers, row, "排單日期")),
-        confirmedAt: formatDate_(getCell_(headers, row, "確認時間")),
         adminNote: getCell_(headers, row, "管理備註")
       };
     }
@@ -111,6 +108,9 @@ function ensureHeaders_(sheet) {
   }
 
   headers = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+  removeObsoleteHeader_(sheet, headers, "確認時間");
+
+  headers = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
   HEADERS.forEach(header => {
     if (!headers.includes(header)) {
       const sourceColumn = headers.indexOf("來源") + 1;
@@ -135,15 +135,24 @@ function ensureHeaders_(sheet) {
 function formatSheet_(sheet) {
   sheet.getRange("B:B").setNumberFormat("yyyy-mm-dd hh:mm:ss");
   sheet.getRange("G:G").setNumberFormat("0");
-  sheet.getRange("I:J").setNumberFormat("yyyy-mm-dd");
+  sheet.getRange("I:I").setNumberFormat("yyyy-mm-dd");
   sheet.setFrozenRows(1);
 
   const statusRange = sheet.getRange("H2:H");
+  if (sheet.getRange("H2").getDataValidation()) return;
+
   const rule = SpreadsheetApp.newDataValidation()
     .requireValueInList(["待確認", "已確認", "資料有誤", "已取消", "已完成"], true)
     .setAllowInvalid(false)
     .build();
   statusRange.setDataValidation(rule);
+}
+
+function removeObsoleteHeader_(sheet, headers, headerName) {
+  const index = headers.indexOf(headerName);
+  if (index >= 0) {
+    sheet.deleteColumn(index + 1);
+  }
 }
 
 function getCell_(headers, row, header) {
