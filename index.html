@@ -428,8 +428,15 @@
 
     .admin-panel {
       display: none;
-      margin-top: 22px;
-      overflow: hidden;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      z-index: 12;
+      width: min(1060px, calc(100% - 28px));
+      max-height: calc(100vh - 36px);
+      margin: 0;
+      overflow: auto;
+      transform: translate(-50%, -50%);
     }
 
     .admin-panel.is-open {
@@ -584,6 +591,10 @@
     .modal-card {
       width: min(380px, 100%);
       padding: 24px;
+    }
+
+    .query-card {
+      width: min(520px, 100%);
     }
 
     .receipt-card {
@@ -763,6 +774,7 @@
 </head>
 <body>
   <div class="topbar">
+    <button class="ghost" type="button" id="openOrderQueryBtn">查詢訂單狀態</button>
     <button class="ghost" type="button" id="loginBtn">管理員登入</button>
     <button class="ghost" type="button" id="logoutBtn" hidden>登出</button>
   </div>
@@ -809,17 +821,6 @@
           <div class="status" id="status" role="status" aria-live="polite"></div>
         </form>
         <iframe name="submitFrame" title="送出結果"></iframe>
-        <div class="query-box">
-          <h2>查詢訂單狀態</h2>
-          <p class="hint">輸入 UID 即可查詢最新一筆訂單的目前狀態、排單日期與管理備註。</p>
-          <div class="query-actions">
-            <label>UID
-              <input id="orderQueryInput" placeholder="請輸入 UID">
-            </label>
-            <button class="secondary" type="button" id="orderQueryBtn">查詢</button>
-          </div>
-          <div class="query-result" id="orderQueryResult"></div>
-        </div>
       </section>
     </main>
 
@@ -831,6 +832,7 @@
           </div>
           <div class="actions">
             <button class="secondary" type="button" id="exportBtn">匯出 Excel CSV</button>
+            <button class="ghost" type="button" id="closeAdminPanelBtn">關閉</button>
           </div>
         </div>
 
@@ -892,6 +894,23 @@
     </div>
   </div>
 
+  <div class="modal" id="orderQueryModal" role="dialog" aria-modal="true" aria-labelledby="orderQueryTitle">
+    <div class="modal-card query-card">
+      <h2 id="orderQueryTitle">查詢訂單狀態</h2>
+      <p class="hint">輸入 UID 即可查詢最新一筆訂單的目前狀態、排單日期與管理備註。</p>
+      <div class="query-actions">
+        <label>UID
+          <input id="orderQueryInput" placeholder="請輸入 UID">
+        </label>
+        <button class="secondary" type="button" id="orderQueryBtn">查詢</button>
+      </div>
+      <div class="query-result" id="orderQueryResult"></div>
+      <div class="actions">
+        <button class="ghost" type="button" id="closeOrderQueryBtn">關閉</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
     <div class="modal-card receipt-card">
       <h2 id="receiptTitle">已填寫完成</h2>
@@ -932,6 +951,9 @@
     const receiptContent = document.getElementById("receiptContent");
     const quantityMinus = document.getElementById("quantityMinus");
     const quantityPlus = document.getElementById("quantityPlus");
+    const openOrderQueryBtn = document.getElementById("openOrderQueryBtn");
+    const closeOrderQueryBtn = document.getElementById("closeOrderQueryBtn");
+    const orderQueryModal = document.getElementById("orderQueryModal");
     const orderQueryInput = document.getElementById("orderQueryInput");
     const orderQueryBtn = document.getElementById("orderQueryBtn");
     const orderQueryResult = document.getElementById("orderQueryResult");
@@ -1060,6 +1082,15 @@
       receiptModal.classList.remove("is-open");
     }
 
+    function openOrderQuery() {
+      orderQueryModal.classList.add("is-open");
+      orderQueryInput.focus();
+    }
+
+    function closeOrderQuery() {
+      orderQueryModal.classList.remove("is-open");
+    }
+
     function renderOrderQueryResult(rows, isError = false) {
       orderQueryResult.classList.add("is-open");
       orderQueryResult.innerHTML = rows.map(([label, value]) => `
@@ -1081,7 +1112,7 @@
       const script = document.createElement("script");
       const timeout = window.setTimeout(() => {
         cleanup();
-        renderOrderQueryResult([["查詢結果", "查詢逾時，請稍後再試。"]], true);
+        renderOrderQueryResult([["查詢結果", "查詢逾時，請確認 Apps Script 已重新部署新版後再試。"]], true);
       }, 12000);
 
       function cleanup() {
@@ -1114,7 +1145,7 @@
       script.src = url.toString();
       script.onerror = () => {
         cleanup();
-        renderOrderQueryResult([["查詢結果", "查詢失敗，請確認網路後再試。"]], true);
+        renderOrderQueryResult([["查詢結果", "查詢失敗，請確認 Apps Script 已重新部署新版或稍後再試。"]], true);
       };
       document.body.appendChild(script);
       renderOrderQueryResult([["查詢結果", "查詢中..."]]);
@@ -1492,9 +1523,14 @@
     });
 
     loginBtn.addEventListener("click", openLogin);
+    openOrderQueryBtn.addEventListener("click", openOrderQuery);
+    closeOrderQueryBtn.addEventListener("click", closeOrderQuery);
     document.getElementById("closeLoginBtn").addEventListener("click", closeLogin);
     loginModal.addEventListener("click", event => {
       if (event.target === loginModal) closeLogin();
+    });
+    orderQueryModal.addEventListener("click", event => {
+      if (event.target === orderQueryModal) closeOrderQuery();
     });
     receiptModal.addEventListener("click", event => {
       if (event.target === receiptModal) closeReceipt();
@@ -1516,6 +1552,10 @@
     });
 
     logoutBtn.addEventListener("click", () => {
+      setAdminVisible(false);
+      setStatus("");
+    });
+    document.getElementById("closeAdminPanelBtn").addEventListener("click", () => {
       setAdminVisible(false);
       setStatus("");
     });
