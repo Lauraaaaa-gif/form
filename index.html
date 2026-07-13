@@ -1931,15 +1931,16 @@
 
     /*
       Mobile order line layout
-      Quantity stays once on the left; product names stack on the right.
+      UID and quantity share one row; product names stay full-width below.
     */
-    .form-row {
+    .uid-quantity-row {
       display: grid;
-      grid-template-columns: minmax(128px, 152px) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(128px, 152px);
       gap: 14px;
       align-items: start;
     }
 
+    .uid-quantity-row label,
     .quantity-label,
     .product-fields label {
       margin-bottom: 0;
@@ -1959,6 +1960,7 @@
     .product-fields {
       gap: 12px;
       margin-bottom: 18px;
+      margin-top: 15px;
     }
 
     .product-fields input {
@@ -1966,9 +1968,9 @@
     }
 
     @media (max-width: 560px) {
-      .form-row {
+      .uid-quantity-row {
         display: grid;
-        grid-template-columns: minmax(112px, 132px) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(112px, 132px);
         gap: 10px;
       }
 
@@ -2103,20 +2105,185 @@
         padding: 16px;
       }
     }
+
+    /*
+      Refined outlined fields
+      Replaces the underline inputs with polished full-border fields.
+    */
+    .intro-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .intro-head .eyebrow {
+      margin-bottom: 0;
+      flex: 0 0 auto;
+      background: #fdeef7;
+      color: #31111d;
+    }
+
+    .intro-head > .topbar {
+      position: static;
+      z-index: auto;
+      width: auto;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+      flex: 0 0 auto;
+    }
+
+    .intro-head > .topbar button {
+      width: auto;
+      min-height: 32px;
+      padding: 7px 12px;
+      font-size: 13px;
+      line-height: 1;
+      background: rgba(255, 251, 254, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(121, 116, 126, 0.16);
+    }
+
+    @media (max-width: 560px) {
+      .hero {
+        padding-top: 24px;
+      }
+
+      .intro-head {
+        gap: 8px;
+      }
+
+      .intro-head > .topbar {
+        display: flex;
+        grid-template-columns: none;
+      }
+
+      .intro-head > .topbar button {
+        min-height: 30px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+
+    form input,
+    .modal-card input {
+      min-height: 54px;
+      border: 1.5px solid rgba(121, 116, 126, 0.34);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(254, 247, 255, 0.42)),
+        rgba(254, 247, 255, 0.72);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        0 8px 22px rgba(28, 27, 31, 0.04);
+      transition: border-color 220ms var(--md-ease), box-shadow 220ms var(--md-ease), background 220ms var(--md-ease);
+    }
+
+    form input:hover,
+    .modal-card input:hover {
+      border-color: rgba(103, 80, 164, 0.42);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(254, 247, 255, 0.5)),
+        rgba(254, 247, 255, 0.84);
+    }
+
+    form input:focus,
+    .modal-card input:focus {
+      border-color: var(--md-primary);
+      background: #fffbfe;
+      box-shadow:
+        0 0 0 4px rgba(103, 80, 164, 0.14),
+        0 12px 28px rgba(103, 80, 164, 0.12);
+    }
+
+    .quantity-stepper input {
+      border-radius: 16px;
+      text-align: center;
+      background: rgba(254, 247, 255, 0.84);
+    }
+
+    .product-fields input {
+      border-radius: 18px;
+    }
+
+    @media (max-width: 560px) {
+      form input,
+      .modal-card input {
+        min-height: 52px;
+        border-radius: 16px;
+      }
+    }
+
+    /*
+      Straighter input boxes and square purple header actions.
+    */
+    form input {
+      width: min(100%, 96%);
+      border-radius: 10px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .quantity-stepper input {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .product-fields input {
+      width: min(100%, 96%);
+      border-radius: 10px;
+    }
+
+    .intro-head > .topbar button {
+      border: 1px solid rgba(103, 80, 164, 0.14);
+      border-radius: 10px;
+      background: #f4ebff;
+      color: #21005d;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .intro-head > .topbar button:hover {
+      background: #eadcff;
+      border-color: rgba(103, 80, 164, 0.24);
+    }
+
+    @media (max-width: 560px) {
+      form input {
+        width: 96%;
+        border-radius: 9px;
+      }
+
+      .quantity-stepper input {
+        width: 100%;
+        border-radius: 8px;
+      }
+
+      .intro-head > .topbar button {
+        border-radius: 9px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <main class="hero">
-      <div class="topbar">
-        <button class="ghost" type="button" id="openOrderQueryBtn">查詢</button>
-        <button class="ghost" type="button" id="loginBtn">管理</button>
-        <button class="ghost" type="button" id="logoutBtn" hidden>登出</button>
-      </div>
       <section class="hero-copy" aria-label="活動資訊">
-        <div class="eyebrow">代送排單</div>
+        <div class="intro-head">
+          <div class="eyebrow">代送排單</div>
+          <div class="topbar">
+            <button class="ghost" type="button" id="openOrderQueryBtn">查詢</button>
+            <button class="ghost" type="button" id="loginBtn">管理</button>
+            <button class="ghost" type="button" id="logoutBtn" hidden>登出</button>
+          </div>
+        </div>
         <h1>第五人格代送</h1>
-        <p class="lead credit">網頁製作者：Bai Xi</p>
         <p class="lead">
 請已付款的老闆幫我填寫以下資訊排單
 未開放修改回覆 如有填錯也請不用擔心
@@ -2135,10 +2302,10 @@
           <label>遊戲名稱
             <input name="gameName" required>
           </label>
-          <label>UID
-            <input name="uid" inputmode="numeric" required>
-          </label>
-          <div class="form-row">
+          <div class="uid-quantity-row">
+            <label>UID
+              <input name="uid" inputmode="numeric" required>
+            </label>
             <label class="quantity-label">數量
               <div class="quantity-stepper">
                 <button class="stepper-btn" type="button" id="quantityMinus" aria-label="減少數量">−</button>
@@ -2146,8 +2313,8 @@
                 <button class="stepper-btn" type="button" id="quantityPlus" aria-label="增加數量">+</button>
               </div>
             </label>
-            <div class="product-fields" id="productFields"></div>
           </div>
+          <div class="product-fields" id="productFields"></div>
           <input type="hidden" name="source" value="商品報名表">
           <button class="primary" type="submit">送出報名</button>
           <div class="status" id="status" role="status" aria-live="polite"></div>
