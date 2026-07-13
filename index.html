@@ -680,6 +680,34 @@
       word-break: break-word;
     }
 
+    .receipt-image-preview {
+      display: none;
+      margin-top: 14px;
+      border-radius: 24px;
+      padding: 12px;
+      background: rgba(254, 247, 255, 0.78);
+      box-shadow: inset 0 0 0 1px rgba(121, 116, 126, 0.12), var(--md-shadow-1);
+    }
+
+    .receipt-image-preview.is-open {
+      display: block;
+    }
+
+    .receipt-image-preview img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+      background: #fff;
+      -webkit-touch-callout: default;
+      user-select: auto;
+    }
+
+    .receipt-image-preview .hint {
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
     iframe {
       display: none;
     }
@@ -1948,23 +1976,143 @@
         padding: 0;
       }
     }
+
+    /*
+      Compact in-card actions and receipt modal
+      Places query/admin controls inside the registration card and shortens receipt height.
+    */
+    .hero > .topbar {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 3;
+      width: auto;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .hero > .topbar button {
+      width: auto;
+      min-height: 34px;
+      padding: 7px 13px;
+      font-size: 13px;
+      line-height: 1;
+      background: rgba(255, 251, 254, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(121, 116, 126, 0.16);
+    }
+
+    .receipt-card {
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .receipt-card h2 {
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .receipt-card .hint {
+      margin-top: 6px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .receipt-badge {
+      min-height: 28px;
+      margin: 8px 0 8px;
+      padding: 4px 11px;
+      font-size: 13px;
+    }
+
+    .pending-badge {
+      min-height: 28px;
+      margin-bottom: 8px;
+      padding: 4px 11px;
+      font-size: 13px;
+    }
+
+    .receipt-list {
+      margin-top: 10px;
+      border-radius: 18px;
+    }
+
+    .receipt-row {
+      grid-template-columns: 92px 1fr;
+      gap: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .receipt-image-preview {
+      margin-top: 10px;
+      border-radius: 18px;
+      padding: 8px;
+    }
+
+    .receipt-image-preview img {
+      border-radius: 12px;
+    }
+
+    .receipt-card .actions {
+      margin-top: 12px;
+      gap: 8px;
+    }
+
+    .receipt-card .actions button {
+      min-height: 40px;
+      padding: 9px 15px;
+    }
+
+    @media (max-width: 560px) {
+      .hero {
+        padding-top: 62px;
+      }
+
+      .hero > .topbar {
+        top: 16px;
+        right: 16px;
+        left: 16px;
+        display: flex;
+        justify-content: flex-end;
+        grid-template-columns: none;
+      }
+
+      .hero > .topbar button {
+        width: auto;
+        min-height: 32px;
+        padding: 7px 12px;
+      }
+
+      .receipt-card {
+        width: min(100%, 420px);
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <button class="ghost" type="button" id="openOrderQueryBtn">查詢訂單狀態</button>
-    <button class="ghost" type="button" id="loginBtn">管理員登入</button>
-    <button class="ghost" type="button" id="logoutBtn" hidden>登出</button>
-  </div>
-
   <div class="wrap">
     <main class="hero">
+      <div class="topbar">
+        <button class="ghost" type="button" id="openOrderQueryBtn">查詢</button>
+        <button class="ghost" type="button" id="loginBtn">管理</button>
+        <button class="ghost" type="button" id="logoutBtn" hidden>登出</button>
+      </div>
       <section class="hero-copy" aria-label="活動資訊">
         <div class="eyebrow">代送排單</div>
         <h1>第五人格代送</h1>
         <p class="lead credit">網頁製作者：Bai Xi</p>
         <p class="lead">
-請老闆幫我填寫以下資訊排單 未付款的老闆也可先填寫
+請已付款的老闆幫我填寫以下資訊排單
 未開放修改回覆 如有填錯也請不用擔心
 稍後我會在聊天室與您核對(。•ω•。)ノ♡</p>
       </section>
@@ -2097,8 +2245,12 @@
       <p class="hint">已收到您的訂單，請保留此畫面並上傳到我們的聊天室，經管理員核對後才會正式登記。</p>
       <p class="hint">一般情況下送出時間為通過好友的隔日(須滿24小時)，以聊天室通知時間為準。</p>
       <div class="receipt-list" id="receiptContent"></div>
+      <div class="receipt-image-preview" id="receiptImagePreview">
+        <img id="receiptPreviewImage" alt="報名收據圖片">
+        <p class="hint">若 Messenger 無法下載，請長按上方圖片儲存，或直接截圖保存。</p>
+      </div>
       <div class="actions">
-        <button class="secondary" type="button" id="downloadReceiptBtn">分享收據圖片</button>
+        <button class="secondary" type="button" id="downloadReceiptBtn">產生收據圖片</button>
         <button class="primary" type="button" id="closeReceiptBtn">我已截圖</button>
       </div>
     </div>
@@ -2127,6 +2279,8 @@
     const downloadArea = document.getElementById("downloadArea");
     const receiptModal = document.getElementById("receiptModal");
     const receiptContent = document.getElementById("receiptContent");
+    const receiptImagePreview = document.getElementById("receiptImagePreview");
+    const receiptPreviewImage = document.getElementById("receiptPreviewImage");
     const quantityMinus = document.getElementById("quantityMinus");
     const quantityPlus = document.getElementById("quantityPlus");
     const openOrderQueryBtn = document.getElementById("openOrderQueryBtn");
@@ -2236,6 +2390,8 @@
 
     function showReceipt(item) {
       currentReceiptItem = item;
+      receiptImagePreview.classList.remove("is-open");
+      receiptPreviewImage.removeAttribute("src");
       const rows = [
         ["收據編號", item.orderNo],
         ["目前狀態", item.status || "待確認"],
@@ -2352,7 +2508,22 @@
       return currentY + lineHeight;
     }
 
+    function showReceiptImagePreview(canvas) {
+      receiptPreviewImage.src = canvas.toDataURL("image/png");
+      receiptImagePreview.classList.add("is-open");
+    }
+
+    function isMessengerBrowser() {
+      return /FBAN|FBAV|Messenger/i.test(navigator.userAgent || "");
+    }
+
     function saveCanvasAsPng(canvas, fileName) {
+      showReceiptImagePreview(canvas);
+
+      if (isMessengerBrowser()) {
+        return;
+      }
+
       canvas.toBlob(async blob => {
         if (!blob) return;
 
@@ -2397,15 +2568,20 @@
       const scale = 2;
       const width = 760;
       const padding = 44;
+      const cardX = 24;
+      const cardY = 24;
+      const cardWidth = width - cardX * 2;
+      const contentX = cardX + padding;
+      const contentWidth = cardWidth - padding * 2;
       const labelWidth = 150;
-      const rowGap = 18;
+      const rowGap = 12;
       const lineHeight = 30;
-      const valueWidth = width - padding * 2 - labelWidth;
+      const valueWidth = contentWidth - labelWidth - 20;
 
       const measureCanvas = document.createElement("canvas");
       const measureContext = measureCanvas.getContext("2d");
       measureContext.font = '26px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-      let contentHeight = 190;
+      let contentHeight = 246;
 
       rows.forEach(([, value]) => {
         const chars = String(value || "").split("");
@@ -2420,46 +2596,115 @@
             line = testLine;
           }
         });
-        contentHeight += Math.max(lineHeight, lines * lineHeight) + rowGap;
+        contentHeight += Math.max(58, lines * lineHeight + 24) + rowGap;
       });
 
-      const height = contentHeight + 48;
+      const height = contentHeight + 54;
       canvas.width = width * scale;
       canvas.height = height * scale;
 
       const context = canvas.getContext("2d");
       context.scale(scale, scale);
-      context.fillStyle = "#0b1018";
+
+      const bgGradient = context.createLinearGradient(0, 0, width, height);
+      bgGradient.addColorStop(0, "#fffbfe");
+      bgGradient.addColorStop(0.5, "#f8f2fb");
+      bgGradient.addColorStop(1, "#f3edf7");
+      context.fillStyle = bgGradient;
       context.fillRect(0, 0, width, height);
-      context.fillStyle = "#171f2c";
-      context.strokeStyle = "#d9a441";
-      context.lineWidth = 3;
+
+      context.save();
+      context.globalAlpha = 0.82;
+      const pinkGlow = context.createRadialGradient(width - 80, 30, 10, width - 80, 30, 260);
+      pinkGlow.addColorStop(0, "#ffd8e4");
+      pinkGlow.addColorStop(1, "rgba(255, 216, 228, 0)");
+      context.fillStyle = pinkGlow;
+      context.fillRect(0, 0, width, height);
+
+      const purpleGlow = context.createRadialGradient(70, height - 70, 10, 70, height - 70, 280);
+      purpleGlow.addColorStop(0, "#eaddff");
+      purpleGlow.addColorStop(1, "rgba(234, 221, 255, 0)");
+      context.fillStyle = purpleGlow;
+      context.fillRect(0, 0, width, height);
+      context.restore();
+
+      context.save();
+      context.shadowColor = "rgba(28, 27, 31, 0.16)";
+      context.shadowBlur = 34;
+      context.shadowOffsetY = 18;
+      const cardGradient = context.createLinearGradient(cardX, cardY, cardX + cardWidth, height - cardY);
+      cardGradient.addColorStop(0, "rgba(254, 247, 255, 0.96)");
+      cardGradient.addColorStop(1, "rgba(243, 237, 247, 0.94)");
+      context.fillStyle = cardGradient;
       context.beginPath();
-      context.roundRect(18, 18, width - 36, height - 36, 12);
+      context.roundRect(cardX, cardY, cardWidth, height - cardY * 2, 48);
       context.fill();
-      context.stroke();
+      context.restore();
 
-      context.fillStyle = "#f6f2e8";
+      context.save();
+      context.globalAlpha = 0.72;
+      context.fillStyle = "#ffd8e4";
+      context.beginPath();
+      context.roundRect(width - 170, 42, 124, 96, 48);
+      context.fill();
+      context.fillStyle = "#eaddff";
+      context.beginPath();
+      context.roundRect(56, height - 150, 140, 100, 52);
+      context.fill();
+      context.restore();
+
+      context.fillStyle = "#1c1b1f";
       context.font = 'bold 34px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-      context.fillText("已填寫完成", padding, 78);
-      context.fillStyle = "#f0c66a";
-      context.font = 'bold 22px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-      context.fillText("請保存此收據並上傳聊天室", padding, 118);
-      context.fillStyle = "#a8adb8";
-      context.font = '20px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-      context.fillText("送出時間以聊天室通知為準", padding, 152);
+      context.fillText("已填寫完成", contentX, 86);
 
-      let y = 200;
+      context.fillStyle = "#eaddff";
+      context.beginPath();
+      context.roundRect(contentX, 108, 220, 36, 999);
+      context.fill();
+      context.fillStyle = "#21005d";
+      context.font = 'bold 19px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
+      context.fillText("請保存此收據", contentX + 18, 132);
+
+      context.fillStyle = "#eaddff";
+      context.beginPath();
+      context.roundRect(contentX, 156, 176, 34, 999);
+      context.fill();
+      context.fillStyle = "#21005d";
+      context.font = 'bold 18px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
+      context.fillText("目前狀態：待確認", contentX + 16, 179);
+
+      context.fillStyle = "#49454f";
+      context.font = '20px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
+      context.fillText("請保留此畫面並上傳聊天室，管理員核對後才會正式登記。", contentX, 218);
+
+      let y = 250;
       rows.forEach(([label, value]) => {
-        context.fillStyle = "#2b3240";
-        context.fillRect(padding, y - 26, width - padding * 2, 1);
-        context.fillStyle = "#a8adb8";
+        const chars = String(value || "").split("");
+        let line = "";
+        let lines = 1;
+        chars.forEach(char => {
+          const testLine = line + char;
+          if (measureContext.measureText(testLine).width > valueWidth && line) {
+            lines += 1;
+            line = char;
+          } else {
+            line = testLine;
+          }
+        });
+        const rowHeight = Math.max(58, lines * lineHeight + 24);
+
+        context.fillStyle = "rgba(254, 247, 255, 0.78)";
+        context.beginPath();
+        context.roundRect(contentX, y - 24, contentWidth, rowHeight, 22);
+        context.fill();
+
+        context.fillStyle = "#49454f";
         context.font = 'bold 22px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-        context.fillText(label, padding, y);
-        context.fillStyle = "#f6f2e8";
+        context.fillText(label, contentX + 20, y + 12);
+        context.fillStyle = "#1c1b1f";
         context.font = '26px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
-        const nextY = wrapCanvasText(context, value, padding + labelWidth, y, valueWidth, lineHeight);
-        y = Math.max(y + lineHeight, nextY) + rowGap;
+        wrapCanvasText(context, value, contentX + labelWidth + 20, y + 12, valueWidth, lineHeight);
+        y += rowHeight + rowGap;
       });
 
       saveCanvasAsPng(canvas, `收據-${currentReceiptItem.orderNo}.png`);
