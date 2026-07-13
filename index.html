@@ -2247,10 +2247,9 @@
       <div class="receipt-list" id="receiptContent"></div>
       <div class="receipt-image-preview" id="receiptImagePreview">
         <img id="receiptPreviewImage" alt="報名收據圖片">
-        <p class="hint">若 Messenger 無法下載，請長按上方圖片儲存，或直接截圖保存。</p>
+        <p class="hint">請長按上方圖片儲存，或直接截圖保存。</p>
       </div>
       <div class="actions">
-        <button class="secondary" type="button" id="downloadReceiptBtn">產生收據圖片</button>
         <button class="primary" type="button" id="closeReceiptBtn">我已截圖</button>
       </div>
     </div>
@@ -2403,12 +2402,9 @@
         ["數量", item.quantity]
       ];
 
-      receiptContent.innerHTML = rows.map(([label, value]) => `
-        <div class="receipt-row">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(value)}</strong>
-        </div>
-      `).join("");
+      receiptContent.hidden = true;
+      receiptContent.innerHTML = "";
+      renderReceiptImage(item, rows);
       receiptModal.classList.add("is-open");
     }
 
@@ -2513,56 +2509,18 @@
       receiptImagePreview.classList.add("is-open");
     }
 
-    function isMessengerBrowser() {
-      return /FBAN|FBAV|Messenger/i.test(navigator.userAgent || "");
-    }
+    function renderReceiptImage(item = currentReceiptItem, rows = null) {
+      if (!item) return;
 
-    function saveCanvasAsPng(canvas, fileName) {
-      showReceiptImagePreview(canvas);
-
-      if (isMessengerBrowser()) {
-        return;
-      }
-
-      canvas.toBlob(async blob => {
-        if (!blob) return;
-
-        const file = new File([blob], fileName, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: "報名收據",
-              text: "請保存此收據圖片"
-            });
-            return;
-          } catch (error) {
-            if (error && error.name === "AbortError") return;
-          }
-        }
-
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-        link.remove();
-      }, "image/png");
-    }
-
-    function downloadReceiptImage() {
-      if (!currentReceiptItem) return;
-
-      const rows = [
-        ["收據編號", currentReceiptItem.orderNo],
-        ["目前狀態", currentReceiptItem.status || "待確認"],
-        ["送出時間", currentReceiptItem.createdAt],
-        ["FB名稱", currentReceiptItem.fbName],
-        ["遊戲名稱", currentReceiptItem.gameName],
-        ["UID", currentReceiptItem.uid],
-        ["商品名稱", currentReceiptItem.productName],
-        ["數量", currentReceiptItem.quantity]
+      const receiptRows = rows || [
+        ["收據編號", item.orderNo],
+        ["目前狀態", item.status || "待確認"],
+        ["送出時間", item.createdAt],
+        ["FB名稱", item.fbName],
+        ["遊戲名稱", item.gameName],
+        ["UID", item.uid],
+        ["商品名稱", item.productName],
+        ["數量", item.quantity]
       ];
       const canvas = document.createElement("canvas");
       const scale = 2;
@@ -2583,7 +2541,7 @@
       measureContext.font = '26px "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif';
       let contentHeight = 246;
 
-      rows.forEach(([, value]) => {
+      receiptRows.forEach(([, value]) => {
         const chars = String(value || "").split("");
         let line = "";
         let lines = 1;
@@ -2678,7 +2636,7 @@
       context.fillText("請保留此畫面並上傳聊天室，管理員核對後才會正式登記。", contentX, 218);
 
       let y = 250;
-      rows.forEach(([label, value]) => {
+      receiptRows.forEach(([label, value]) => {
         const chars = String(value || "").split("");
         let line = "";
         let lines = 1;
@@ -2707,7 +2665,7 @@
         y += rowHeight + rowGap;
       });
 
-      saveCanvasAsPng(canvas, `收據-${currentReceiptItem.orderNo}.png`);
+      showReceiptImagePreview(canvas);
     }
 
     function getQuantityValue() {
@@ -2958,7 +2916,6 @@
     receiptModal.addEventListener("click", event => {
       if (event.target === receiptModal) closeReceipt();
     });
-    document.getElementById("downloadReceiptBtn").addEventListener("click", downloadReceiptImage);
     document.getElementById("closeReceiptBtn").addEventListener("click", closeReceipt);
 
     loginForm.addEventListener("submit", event => {
