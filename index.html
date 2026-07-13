@@ -6,7 +6,7 @@
   <title>代送排單表</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
@@ -2269,6 +2269,64 @@
         border-radius: 9px;
       }
     }
+
+    /*
+      Title keeps Source Han Sans; body copy uses a clean sans-serif stack.
+    */
+    body,
+    button,
+    input,
+    textarea,
+    select {
+      font-family: "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    }
+
+    h1 {
+      font-family: "Source Han Sans TC", "Source Han Sans", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+      font-size: clamp(34px, 6vw, 54px);
+      font-weight: 800;
+      line-height: 1.14;
+    }
+
+    @media (max-width: 560px) {
+      h1 {
+        font-size: 34px;
+      }
+    }
+
+    /*
+      Unify dark text with the query/admin button text color.
+    */
+    body,
+    h1,
+    h2,
+    h3,
+    label,
+    input,
+    .lead,
+    .hint,
+    .status,
+    .receipt-row strong,
+    .query-result-row strong,
+    .metric strong,
+    th,
+    td {
+      color: #21005d;
+    }
+
+    .lead,
+    .hint,
+    .mini,
+    .empty,
+    .receipt-row span,
+    .query-result-row span,
+    .metric span {
+      color: rgba(33, 0, 93, 0.72);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -2413,20 +2471,20 @@
   <div class="modal" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
     <div class="modal-card receipt-card">
       <h2 id="receiptTitle">已填寫完成</h2>
-      <div class="receipt-badge">請截圖保存此收據</div>
+      <div class="receipt-badge">請自行截圖保存此收據</div>
       <div class="pending-badge">目前狀態：待確認</div>
       <p class="hint">已收到您的訂單，請保留此畫面並上傳到我們的聊天室，經管理員核對後才會正式登記。</p>
       <p class="hint">一般情況下送出時間為通過好友的隔日(須滿24小時)，以聊天室通知時間為準。</p>
       <div class="receipt-list" id="receiptContent"></div>
-      <div class="receipt-image-preview" id="receiptImagePreview">
+      <div class="receipt-image-preview" id="receiptImagePreview" hidden>
         <a id="receiptOpenImageLink" href="#" target="_blank" rel="noopener">
           <img id="receiptPreviewImage" alt="報名收據圖片">
         </a>
         <p class="hint">若長按沒有反應，請點圖片或「開啟圖片」後再長按儲存，也可以直接截圖保存。</p>
       </div>
       <div class="actions">
-        <a class="download-link" id="receiptOpenImageAction" href="#" target="_blank" rel="noopener">開啟圖片</a>
-        <button class="primary" type="button" id="closeReceiptBtn">我已保存</button>
+        <a class="download-link" id="receiptOpenImageAction" href="#" target="_blank" rel="noopener" hidden>開啟圖片</a>
+        <button class="primary" type="button" id="closeReceiptBtn">關閉</button>
       </div>
     </div>
   </div>
@@ -2568,9 +2626,11 @@
     function showReceipt(item) {
       currentReceiptItem = item;
       receiptImagePreview.classList.remove("is-open");
+      receiptImagePreview.hidden = true;
       receiptPreviewImage.removeAttribute("src");
       receiptOpenImageLink.setAttribute("href", "#");
       receiptOpenImageAction.setAttribute("href", "#");
+      receiptOpenImageAction.hidden = true;
       const rows = [
         ["收據編號", item.orderNo],
         ["目前狀態", item.status || "待確認"],
@@ -2582,9 +2642,13 @@
         ["數量", item.quantity]
       ];
 
-      receiptContent.hidden = true;
-      receiptContent.innerHTML = "";
-      renderReceiptImage(item, rows);
+      receiptContent.hidden = false;
+      receiptContent.innerHTML = rows.map(([label, value]) => `
+        <div class="receipt-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join("");
       receiptModal.removeAttribute("aria-hidden");
       document.body.style.overflow = "hidden";
       receiptModal.classList.add("is-open");
