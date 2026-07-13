@@ -2682,7 +2682,7 @@
         <div class="panel-head">
         </div>
          <h3>填寫資料</h3>
-        <form id="entryForm" method="post" target="submitFrame">
+        <form id="entryForm" method="post" action="https://script.google.com/macros/s/AKfycbyfI2AXLe2brLV0OnFhRlJJRxw3o4NRv49CrQPjV1FvRoPMfvbdUrDTcoPYHOkF1t5P/exec" target="submitFrame">
           <label>FB名稱
             <input name="fbName" autocomplete="name" required>
           </label>
@@ -2909,7 +2909,9 @@
         return sharedUrl;
       }
 
-      return localStorage.getItem(scriptUrlKey) || defaultScriptUrl;
+      // Repair an outdated saved deployment URL by restoring the verified endpoint.
+      localStorage.setItem(scriptUrlKey, defaultScriptUrl);
+      return defaultScriptUrl;
     }
 
     function applyScriptUrl() {
@@ -3396,13 +3398,32 @@
       setAdminStatus("CSV 已產生。若沒有自動下載，請點下方連結。");
     }
 
-    function submitToGoogleSheet(item) {
+    function submitWithHiddenForm(payload) {
       const syncForm = document.createElement("form");
       syncForm.method = "post";
       syncForm.action = form.action;
       syncForm.target = "submitFrame";
       syncForm.style.display = "none";
 
+      Object.entries(payload).forEach(([name, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        syncForm.appendChild(input);
+      });
+
+      document.body.appendChild(syncForm);
+      const submitFrame = document.querySelector('iframe[name="submitFrame"]');
+      const cleanup = () => syncForm.remove();
+      if (submitFrame) {
+        submitFrame.addEventListener("load", cleanup, { once: true });
+      }
+      syncForm.submit();
+      window.setTimeout(cleanup, 30000);
+    }
+
+    function submitToGoogleSheet(item) {
       const payload = {
         orderNo: item.orderNo,
         fbName: item.fbName,
@@ -3416,17 +3437,20 @@
         source: "第五排單"
       };
 
+      const body = new URLSearchParams();
       Object.entries(payload).forEach(([name, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        syncForm.appendChild(input);
+        body.set(name, value);
       });
 
-      document.body.appendChild(syncForm);
-      syncForm.submit();
-      window.setTimeout(() => syncForm.remove(), 1000);
+      return fetch(form.action, {
+        method: "POST",
+        mode: "no-cors",
+        cache: "no-store",
+        keepalive: true,
+        body
+      }).catch(() => {
+        submitWithHiddenForm(payload);
+      });
     }
 
     function deleteLocalEntry(index) {
