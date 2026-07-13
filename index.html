@@ -2548,44 +2548,32 @@
       border-radius: 24px;
     }
 
-    /* Borderless receipt details with a softer, layered finish. */
+    /* Receipt details share one clean white information surface. */
     .receipt-card {
       border: 0;
     }
 
     .receipt-list {
-      gap: 8px;
-      padding: 0;
+      gap: 0;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 28px rgba(50, 38, 68, 0.06);
+      overflow: hidden;
+    }
+
+    .receipt-row {
+      min-height: 42px;
+      padding: 9px 4px;
       border: 0;
       border-radius: 0;
       background: transparent;
       box-shadow: none;
-      overflow: visible;
-    }
-
-    .receipt-row {
-      position: relative;
-      min-height: 44px;
-      padding: 10px 14px 10px 17px;
-      border: 0;
-      border-radius: 12px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(246, 239, 250, 0.72));
-      box-shadow:
-        0 8px 22px rgba(50, 38, 68, 0.07),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
 
     .receipt-row::before {
-      content: "";
-      position: absolute;
-      top: 10px;
-      bottom: 10px;
-      left: 0;
-      width: 3px;
-      border-radius: 0 3px 3px 0;
-      background: linear-gradient(180deg, #8b6bc1, #c58da5);
-      opacity: 0.72;
+      display: none;
     }
 
     .receipt-row span {
@@ -2651,14 +2639,18 @@
       }
 
       .receipt-list {
-        gap: 7px;
+        gap: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
       }
 
       .receipt-row {
-        min-height: 42px;
-        padding: 9px 11px 9px 14px;
+        min-height: 40px;
+        padding: 8px 2px;
         border: 0;
-        border-radius: 10px;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
       }
     }
 
